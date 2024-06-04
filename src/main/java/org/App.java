@@ -6,8 +6,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
-public class Main {
+public class App {
 
     static final String JDBC_DRIVER = "org.h2.Driver";
     private static final String H2_URL = "jdbc:h2:tcp://localhost/~/test1";
@@ -20,7 +19,7 @@ public class Main {
         return DriverManager.getConnection(H2_URL, JDBC_USER, JDBC_PASSWORD);
     }
 
-    private static final Logger logger = LogManager.getLogger(Main.class);
+    private static final Logger logger = LogManager.getLogger(App.class);
 
     public static void main(String[] args) {
         // Crear la conexión a la base de datos
