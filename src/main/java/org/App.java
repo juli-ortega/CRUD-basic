@@ -2,14 +2,17 @@ package org;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+
 public class App {
 
     static final String JDBC_DRIVER = "org.h2.Driver";
-    private static final String H2_URL = "jdbc:h2:tcp://localhost/~/test1";
+    private static final String H2_DATABASE = "test";
+    private static final String H2_URL = "jdbc:h2:tcp://localhost/~/" + H2_DATABASE;
     //modificar segun config
     static final String JDBC_USER = "sa";
     static final String JDBC_PASSWORD = "";
@@ -33,15 +36,25 @@ public class App {
         }
 
         // Crear la tabla PRODUCTOS si no existe
-        String createTableSQL = "CREATE TABLE IF NOT EXISTS PRODUCTOS ("
+        String createTableProductosSQL = "CREATE TABLE IF NOT EXISTS PRODUCTOS ("
                 + "id INT AUTO_INCREMENT PRIMARY KEY, "
                 + "name VARCHAR(20) NOT NULL, "
                 + "stock INT NOT NULL,"
                 + "price DOUBLE NOT NULL"
                 + ")";
+        String createTableVentaSQL = "CREATE TABLE IF NOT EXISTS VENTAS ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "producto_id INT NOT NULL, "
+                + "quantity INT NOT NULL, "
+                + "total_price DOUBLE NOT NULL, "
+                + "FOREIGN KEY (producto_id) REFERENCES PRODUCTOS(id)"
+                + ")";
+
         try (Statement statement = connection.createStatement()) {
-            statement.execute(createTableSQL);
+            statement.execute(createTableProductosSQL);
+            statement.execute(createTableVentaSQL);
             System.out.println("Tabla PRODUCTOS creada exitosamente");
+            System.out.println("Tabla VENTA creada exitosamente");
         } catch (SQLException e) {
             System.out.println("Error al crear la tabla PRODUCTOS: " + e.getMessage());
         }
@@ -168,22 +181,25 @@ public class App {
                     ResultSet resultSet = pstmt.executeQuery();
 
                     if (resultSet.next()) {
+                        logger.info("Producto encontrado!");
                         int id = resultSet.getInt("id");
                         String nombre = resultSet.getString("name");
                         double precio = resultSet.getDouble("price");
                         int stock = resultSet.getInt("stock");
 
-                        logger.info("Producto encontrado!");
                         if (stock <= 0) {
                             throw new Error("No hay más stock de este producto");
                         }
+
                         System.out.println("Nombre: " + nombre);
                         System.out.println("Precio: " + precio);
                         System.out.println("Stock: " + stock);
                         System.out.println("Ingrese cantidad: ");
                         int cantidad = sInt.nextInt();
+
                         ProductoDto prodToSell = new ProductoDto(nombre, precio, cantidad, stock);
                         logger.info(prodToSell);
+
                         productosCarrito.add(prodToSell);
                     } else {
                         System.out.println("No se encontró el producto con el nombre: " + name);
