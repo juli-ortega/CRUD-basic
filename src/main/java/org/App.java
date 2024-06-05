@@ -11,7 +11,7 @@ import java.util.Scanner;
 public class App {
 
     static final String JDBC_DRIVER = "org.h2.Driver";
-    private static final String H2_DATABASE = "test";
+    private static final String H2_DATABASE = "test1";
     private static final String H2_URL = "jdbc:h2:tcp://localhost/~/" + H2_DATABASE;
     //modificar segun config
     static final String JDBC_USER = "sa";
@@ -167,6 +167,7 @@ public class App {
 
     public static void CobrarProducto() {
         List<ProductoDto> productosCarrito = new ArrayList<>();
+        Ventas sells = new Ventas();
         Scanner sText = new Scanner(System.in);
         Scanner sInt = new Scanner(System.in);
 
@@ -238,6 +239,7 @@ public class App {
                 }
             }
             logger.info("Compra realizada!");
+            sells.IngresarVentasProductos(productosCarrito);
         } else {
             logger.warn("Compra NO realizada.");
         }
@@ -283,7 +285,9 @@ public class App {
 
     public static void Balance() {
         System.out.println("Ganancias");
+
         System.out.println("Perdida");
+
     }
 
     public static void ComandaCocina() {

@@ -11,8 +11,8 @@ Implementar un menú principal para los siguientes casos de uso:
 2-Ingreso de mercadería
 3-Pago a proveedor
 4-Consulta de ventas
-a- Diaria
-b- Mensual
+    a- Diaria
+    b- Mensual
 5-Balance (mostrar ganancias y pérdidas)
 6-Solicitar una comanda a la cocina.
 7-Pagar cuenta
