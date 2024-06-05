@@ -11,12 +11,13 @@ import java.util.Scanner;
 public class App {
 
     static final String JDBC_DRIVER = "org.h2.Driver";
-    private static final String H2_DATABASE = "test1";
+    private static final String H2_DATABASE = "test";
     private static final String H2_URL = "jdbc:h2:tcp://localhost/~/" + H2_DATABASE;
     //modificar segun config
     static final String JDBC_USER = "sa";
     static final String JDBC_PASSWORD = "";
     private static Connection connection; // Connection como campo de clase
+    private static Double pagarProveedores = 0.0;
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(H2_URL, JDBC_USER, JDBC_PASSWORD);
@@ -239,6 +240,8 @@ public class App {
                 }
             }
             logger.info("Compra realizada!");
+            pagarProveedores += total;
+            sells.setConnection(connection);
             sells.IngresarVentasProductos(productosCarrito);
         } else {
             logger.warn("Compra NO realizada.");
@@ -246,48 +249,109 @@ public class App {
     }
 
     public static void IngresarProducto() {
-
-        Scanner sName = new Scanner(System.in);
         Scanner sn = new Scanner(System.in);
-        System.out.print("Ingrese el NOMBRE: ");
-        String name = sName.nextLine().toLowerCase();
-        System.out.print("Ingrese el PRECIO: ");
-        Double price = sn.nextDouble();
-        System.out.print("Ingrese el STOCK: ");
-        Integer stock = sn.nextInt();
-
-        Producto newProduct = new Producto(name, price, stock);
-
-        try {
-            String sql = "INSERT INTO Productos (name, price, stock) VALUES (?, ?, ?)";
-            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-                pstmt.setString(1, newProduct.getName());
-                pstmt.setDouble(2, newProduct.getPrice());
-                pstmt.setInt(3, newProduct.getStock());
-                pstmt.executeUpdate();
-                logger.info("Producto insertado correctamente.");
-                logger.info(newProduct.toString());
+        Scanner sName = new Scanner(System.in);
+        Scanner sText = new Scanner(System.in);
+        while (true) {
+            System.out.print("Ingrese el NOMBRE: ");
+            String name = sName.nextLine().toLowerCase();
+            //CHECKEAR SI EXISTE
+            try {
+                String sql = "SELECT * FROM Productos WHERE name = ?";
+                try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                    pstmt.setString(1, name);
+                    ResultSet resultSet = pstmt.executeQuery();
+                    if (resultSet.next()) {
+                        logger.warn("Este producto ya existe.");
+                        IngresarProducto();
+                    }
+                }
+            } catch (SQLException e) {
+                System.out.println("Error al ejecutar la consulta SQL: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.out.println("Error al ejecutar la consulta SQL: " + e.getMessage());
+            //PRECIO
+            Double price;
+            while (true) {
+                System.out.print("Ingrese el PRECIO: ");
+                price = sn.nextDouble();
+                if (price <= 0.0) {
+                    logger.warn("STOCK DEBE SER MAYOR A 0.");
+                    continue;
+                }
+                break;
+            }
+            //STOCK
+            Integer stock = 0;
+            while (true) {
+                System.out.print("Ingrese el STOCK: ");
+                stock = sn.nextInt();
+                if (stock <= 0) {
+                    logger.warn("STOCK DEBE SER MAYOR A 0.");
+                    continue;
+                }
+                break;
+            }
+
+            Producto newProduct = new Producto(name, price, stock);
+            //INSERTAR PRODUCTO
+
+            try {
+                String sql = "INSERT INTO Productos (name, price, stock) VALUES (?, ?, ?)";
+                try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                    pstmt.setString(1, newProduct.getName());
+                    pstmt.setDouble(2, newProduct.getPrice());
+                    pstmt.setInt(3, newProduct.getStock());
+                    pstmt.executeUpdate();
+                    logger.info("Producto insertado correctamente.");
+                    logger.info(newProduct.toString());
+                }
+            } catch (SQLException e) {
+                System.out.println("Error al ejecutar la consulta SQL: " + e.getMessage());
+            }
+
+            System.out.printf("Agregar otro producto? ENTER = SI : ");
+            if (sText.nextLine().isEmpty()) {
+                sName.nextLine();
+                continue;
+            }
+            break;
+
         }
+        ShowMenuMarket();
     }
 
-
     public static void PagarProveedor() {
+
+        Scanner sText = new Scanner(System.in);
+
+        logger.info("TOTAL:" + pagarProveedores);
+        System.out.println("1) Pagar.");
+        System.out.println("2) Volver.");
+
+        switch (sText.nextInt()) {
+            case 1:
+                logger.info("PAGO A PROVEEDORES REALIZADO/");
+                pagarProveedores = 0.0;
+                break;
+            case 0:
+                ShowMenuMarket();
+                break;
+            default:
+                System.out.println("No se puede realizar la operacion/");
+                PagarProveedor();
+                break;
+        }
 
     }
 
     public static void ConsultaVentas() {
-        System.out.println("Diaria");
-        System.out.println("Mensual");
+        System.out.println("Diaria.");
+        System.out.println("Mensual.");
     }
 
     public static void Balance() {
-        System.out.println("Ganancias");
-
-        System.out.println("Perdida");
-
+        System.out.println("Ganancias.");
+        System.out.println("Perdida.");
     }
 
     public static void ComandaCocina() {

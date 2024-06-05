@@ -3,33 +3,37 @@ package org;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 
-import static org.App.connection;
-import static org.App.logger;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Ventas {
-    private List<ProductoDto>products;
+    private static final Logger logger = LogManager.getLogger(App.class);
+
     //private List<Platos>meal = new ArrayList();
+    private Connection connection;
 
-    public void IngresarVentasProductos(List<ProductoDto> productosCarritos){
-        this.products = productosCarritos;
-
+    public void IngresarVentasProductos(List<ProductoDto> productosCarritos) {
         try {
-            String sql = "INSERT INTO Ventas (name, price, stock) VALUES (?, ?, ?)";
-            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-                pstmt.setString(1, newProduct.getName());
-                pstmt.setDouble(2, newProduct.getPrice());
-                pstmt.setInt(3, newProduct.getStock());
-                pstmt.executeUpdate();
-                logger.info("Producto insertado correctamente.");
-                logger.info(newProduct.toString());
+            for (ProductoDto e : productosCarritos) {
+                String sql = "INSERT INTO Ventas (name, price, stock) VALUES (?, ?, ?)";
+                try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                    pstmt.setString(1, e.getName());
+                    pstmt.setDouble(2, e.getPrice());
+                    pstmt.setInt(3, e.getStock());
+                    pstmt.executeUpdate();
+                    logger.info("Producto insertado a VENTAS correctamente.");
+                    logger.info(e.toString());
+                }
             }
         } catch (SQLException e) {
             System.out.println("Error al ejecutar la consulta SQL: " + e.getMessage());
