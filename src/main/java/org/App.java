@@ -4,6 +4,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -11,7 +13,7 @@ import java.util.Scanner;
 public class App {
 
     static final String JDBC_DRIVER = "org.h2.Driver";
-    private static final String H2_DATABASE = "test";
+    private static final String H2_DATABASE = "testParcial";
     private static final String H2_URL = "jdbc:h2:tcp://localhost/~/" + H2_DATABASE;
     //modificar segun config
     static final String JDBC_USER = "sa";
@@ -41,21 +43,33 @@ public class App {
                 + "id INT AUTO_INCREMENT PRIMARY KEY, "
                 + "name VARCHAR(20) NOT NULL, "
                 + "stock INT NOT NULL,"
+                + "createdAt DATE,"
                 + "price DOUBLE NOT NULL"
                 + ")";
         String createTableVentaSQL = "CREATE TABLE IF NOT EXISTS VENTAS ("
                 + "id INT AUTO_INCREMENT PRIMARY KEY, "
-                + "producto_id INT NOT NULL, "
+                + "name_sell VARCHAR(50) NOT NULL, "
                 + "quantity INT NOT NULL, "
                 + "total_price DOUBLE NOT NULL, "
-                + "FOREIGN KEY (producto_id) REFERENCES PRODUCTOS(id)"
+                + "category VARCHAR(10),"
+                + "createdAt DATE"
+                + ")";
+        String createTablePlatoSQL = "CREATE TABLE IF NOT EXISTS PLATO ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "name_plato VARCHAR(50) NOT NULL, "
+                + "quantity INT NOT NULL, "
+                + "price DOUBLE NOT NULL, "
+                + "description VARCHAR(50),"
+                + "createdAt DATE"
                 + ")";
 
         try (Statement statement = connection.createStatement()) {
             statement.execute(createTableProductosSQL);
             statement.execute(createTableVentaSQL);
+            statement.execute(createTablePlatoSQL);
             System.out.println("Tabla PRODUCTOS creada exitosamente");
             System.out.println("Tabla VENTA creada exitosamente");
+            System.out.println("Tabla PLATOS creada exitosamente");
         } catch (SQLException e) {
             System.out.println("Error al crear la tabla PRODUCTOS: " + e.getMessage());
         }
@@ -71,6 +85,7 @@ public class App {
         Scanner sInt = new Scanner(System.in);
         System.out.println("[1] Minimarket");
         System.out.println("[2] Servicio de comida");
+        System.out.println("[3] PRUEBA 1 - Platos");
         System.out.println("[0] Salir del programa.");
         int option = sInt.nextInt();
         switch (option) {
@@ -80,9 +95,34 @@ public class App {
             case 2:
                 ShowMenuFood();
                 break;
+            case 3:
+                Prueba1Platos();
+                break;
             case 0:
                 logger.info("Programa finalizado");
                 System.exit(0);
+        }
+    }
+
+    public static void Prueba1Platos(){
+        List<Plato> platosSQL = new ArrayList<>();
+        LocalDate localDate = LocalDate.now(); // Obtiene la fecha actual
+        Date sqlDate = new Date(System.currentTimeMillis());
+
+        platosSQL.add(new Plato("Paella", "Traditional Spanish dish", 10.0, 15, sqlDate));
+        platosSQL.add(new Plato("Tacos", "Mexican dish", 20.0, 9, sqlDate));
+        platosSQL.add(new Plato("Sushi", "Japanese dish", 30.0, 12, sqlDate));
+        try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO PLATO (name_plato, quantity, price, description, createdAt) VALUES (?, ?, ?, ?, ?)")) {
+            for (Plato p : platosSQL) {
+                pstmt.setString(1, p.getName());
+                pstmt.setInt(2, p.getQuantity());
+                pstmt.setDouble(3, p.getPrice());
+                pstmt.setString(4, p.getDescription());
+                pstmt.setDate(5, p.getCreatedAt());
+                pstmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al cargar PLATOS: " + e.getMessage());
         }
     }
 
