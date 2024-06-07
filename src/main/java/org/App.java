@@ -13,7 +13,7 @@ import java.util.Scanner;
 public class App {
 
     static final String JDBC_DRIVER = "org.h2.Driver";
-    private static final String H2_DATABASE = "testParcial";
+    private static final String H2_DATABASE = "test1";
     private static final String H2_URL = "jdbc:h2:tcp://localhost/~/" + H2_DATABASE;
     //modificar segun config
     static final String JDBC_USER = "sa";
