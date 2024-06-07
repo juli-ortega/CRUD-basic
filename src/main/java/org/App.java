@@ -200,11 +200,11 @@ public class App {
         }
     }
 
-    public void PrintArray(List<?> list) {
+    /*public void PrintArray(List<?> list) {
         for (Object o : list) {
             System.out.println(o);
         }
-    }
+    }*/
 
     public static void CobrarProducto() {
         List<ProductoDto> productosCarrito = new ArrayList<>();
