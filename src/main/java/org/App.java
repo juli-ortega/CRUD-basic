@@ -104,7 +104,7 @@ public class App {
         }
     }
 
-    public static void Prueba1Platos(){
+    public static void Prueba1Platos() {
         List<Plato> platosSQL = new ArrayList<>();
         LocalDate localDate = LocalDate.now(); // Obtiene la fecha actual
         Date sqlDate = new Date(System.currentTimeMillis());
@@ -200,11 +200,11 @@ public class App {
         }
     }
 
-    public void PrintArray(List<?> list) {
+    /*public void PrintArray(List<?> list) {
         for (Object o : list) {
             System.out.println(o);
         }
-    }
+    }*/
 
     public static void CobrarProducto() {
         List<ProductoDto> productosCarrito = new ArrayList<>();
@@ -395,6 +395,57 @@ public class App {
     }
 
     public static void ComandaCocina() {
+        ArrayList<Plato> comanda = new ArrayList<>();
+        try (Statement stmt = connection.createStatement()) {
+            Scanner l = new Scanner(System.in);
+            while (true) {
+                ResultSet resultSet = stmt.executeQuery("SELECT * FROM plato");
+                List<Plato> platosDisponibles = new ArrayList<>();
+                while (resultSet.next()) {
+                    int id = resultSet.getInt("id");
+                    String name = resultSet.getString("name_plato");
+                    int quantity = resultSet.getInt("quantity");
+                    double price = resultSet.getDouble("price");
+                    String description = resultSet.getString("description");
+                    Date createdAt = resultSet.getDate("createdAt");
+
+                    Plato plato = new Plato(name, description, price, quantity, createdAt);
+                    platosDisponibles.add(plato);
+                }
+
+                logger.info("PLATOS DISPONIBLES");
+                for (Plato plato : platosDisponibles) {
+                    logger.info("Plato " + (platosDisponibles.indexOf(plato) + 1) + ":\n" +
+                            "Nombre: " + plato.getName() + "\n" +
+                            "Descripción: " + plato.getDescription() + "\n" +
+                            "Precio: " + plato.getPrice() + "\n" +
+                            "Cantidad: " + plato.getQuantity() + "\n" +
+                            "Fecha de creación: " + plato.getCreatedAt() + "\n"
+                    );
+                }
+
+
+                logger.info("Elija el numero del plato ");
+                int numero = l.nextInt();
+                logger.info("Confirmar comanda (S/N): ");
+                String confirmacion = l.next();
+
+                if (confirmacion.equalsIgnoreCase("S")) {
+                    logger.info("Comanda confirmada");
+                } else {
+                    logger.info("Comanda cancelada");
+                }
+                logger.info("pedir mas comida ? (S/N): ");
+                String c = l.next();
+
+                if (c.equalsIgnoreCase("N")) {
+                    break;
+                }
+            }
+        /// llamar a ingeso de ventas //// se le pasa el atributo de nombre comanda con todos los platos que confirmo el cliente//
+        } catch (SQLException e) {
+            System.out.println("Error al obtener los platos: " + e.getMessage());
+        }
 
     }
 
