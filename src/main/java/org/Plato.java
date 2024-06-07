@@ -13,5 +13,4 @@ public class Plato {
     private Integer quantity;
     private Date createdAt;
 
-
 }
