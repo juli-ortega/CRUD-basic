@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -27,7 +26,7 @@ public class App {
 
     private static final Logger logger = LogManager.getLogger(App.class);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
         // Crear la conexión a la base de datos
         try {
             Class.forName(JDBC_DRIVER);
@@ -81,7 +80,7 @@ public class App {
         }
     }
 
-    public static void ShowMenu() {
+    public static void ShowMenu() throws SQLException {
         Scanner sInt = new Scanner(System.in);
         System.out.println("[1] Minimarket");
         System.out.println("[2] Servicio de comida");
@@ -126,7 +125,7 @@ public class App {
         }
     }
 
-    public static void ShowMenuMarket() {
+    public static void ShowMenuMarket() throws SQLException {
         Scanner sInt = new Scanner(System.in);
         //minimarket
         System.out.println("[1] Vender / Cobrar producto");
@@ -138,17 +137,16 @@ public class App {
         OptionSelectedMarket(sInt.nextInt());
     }
 
-    public static void ShowMenuFood() {
+    public static void ShowMenuFood() throws SQLException {
         Scanner sInt = new Scanner(System.in);
         //comida
         System.out.println("[1] Solicitar una comanda a la cocina.");
-        System.out.println("[2] Pagar cuenta.");
-        System.out.println("[3] Informacion estadística de platos más pedidos.");
+        System.out.println("[2] Informacion estadística de platos más pedidos.");
         System.out.println("[0] Volver.");
         OptionSelectedFood(sInt.nextInt());
     }
 
-    public static void OptionSelectedMarket(int option) {
+    public static void OptionSelectedMarket(int option) throws SQLException {
         switch (option) {
             case 1:
                 logger.info("Vender / Cobrar producto");
@@ -164,7 +162,7 @@ public class App {
                 break;
             case 4:
                 logger.info("Consulta de ventas");
-                ConsultaVentas();
+                ConsultarVentas();
                 break;
             case 5:
                 logger.info("Balance");
@@ -180,17 +178,13 @@ public class App {
         }
     }
 
-    public static void OptionSelectedFood(int option) {
+    public static void OptionSelectedFood(int option) throws SQLException {
         switch (option) {
             case 1:
                 logger.info("Solicitar una comanda a la cocina.");
                 ComandaCocina();
                 break;
             case 2:
-                logger.info("Pagar cuenta");
-                PagarCuenta();
-                break;
-            case 3:
                 logger.info("Informacion estadística de platos más pedidos");
                 PlatosMasPedidos();
                 break;
@@ -237,8 +231,15 @@ public class App {
                         System.out.println("Precio: " + precio);
                         System.out.println("Stock: " + stock);
                         System.out.println("Ingrese cantidad: ");
-                        int cantidad = sInt.nextInt();
-
+                        int cantidad = 0;
+                        while (true) {
+                            cantidad = sInt.nextInt();
+                            if (cantidad == 0 || cantidad > stock) {
+                                logger.warn("Ingrese cantidad correctamente.");
+                                continue;
+                            }
+                            break;
+                        }
                         ProductoDto prodToSell = new ProductoDto(nombre, precio, cantidad, stock);
                         logger.info(prodToSell);
 
@@ -288,7 +289,7 @@ public class App {
         }
     }
 
-    public static void IngresarProducto() {
+    public static void IngresarProducto() throws SQLException {
         Scanner sn = new Scanner(System.in);
         Scanner sName = new Scanner(System.in);
         Scanner sText = new Scanner(System.in);
@@ -360,7 +361,7 @@ public class App {
         ShowMenuMarket();
     }
 
-    public static void PagarProveedor() {
+    public static void PagarProveedor() throws SQLException {
 
         Scanner sText = new Scanner(System.in);
 
@@ -384,18 +385,104 @@ public class App {
 
     }
 
-    public static void ConsultaVentas() {
-        System.out.println("Diaria.");
-        System.out.println("Mensual.");
+    public static void ConsultarVentas() throws SQLException {
+        Scanner stext = new Scanner(System.in);
+        while (true) {
+            System.out.println("[D]iaria o [M]ensual? ");
+            String period = stext.nextLine().toLowerCase();
+            if (period.equals("m")) {
+                List<String> monthlySales = getSales(connection, period);
+                for (String e : monthlySales) {
+                    System.out.println(e);
+                }
+                break;
+            } else if (period.equals("d")) {
+                List<String> dailySales = getSales(connection, period);
+                for (String e : dailySales) {
+                    System.out.println(e.toString());
+                }
+                break;
+            }
+            continue;
+        }
+
     }
 
-    public static void Balance() {
-        System.out.println("Ganancias.");
-        System.out.println("Perdida.");
+    public static List<String> getSales(Connection connection, String period) throws SQLException {
+        String queryDailySales = "SELECT p.name AS product_name, v.category, COUNT(*) AS sales_count " +
+                "FROM VENTAS v " +
+                "JOIN PRODUCTOS p ON v.name_sell = p.name " +
+                "WHERE v.createdAt = CURDATE() AND v.category = 'PRODUCTO' " +
+                "GROUP BY p.name, v.category";
+        String queryMonthlySales = "SELECT p.name AS product_name, v.category, COUNT(*) AS sales_count " +
+                "FROM VENTAS v " +
+                "JOIN PRODUCTOS p ON v.name_sell = p.name " +
+                "WHERE MONTH(v.createdAt) = MONTH(CURDATE()) AND YEAR(v.createdAt) = YEAR(CURDATE()) AND v.category = 'PRODUCTO' " +
+                "GROUP BY p.name, v.category";
+
+        String query = period.equals("daily") ? queryDailySales : queryMonthlySales;
+
+        List<String> sales = new ArrayList<>();
+        try (PreparedStatement pstmt = connection.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String productName = rs.getString("product_name");
+                String category = rs.getString("category");
+                int count = rs.getInt("sales_count");
+                sales.add("Product: " + productName + ", Category: " + category + ", Sales Count: " + count);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return sales;
     }
+
+
+    public static void Balance() throws SQLException {
+
+        double totalProfit = calculateProfitAndLoss(connection);
+        System.out.println("Total Profit: " + totalProfit);
+    }
+
+    public static double calculateProfitAndLoss(Connection connection) throws SQLException {
+        double totalProfit = calculateProductProfit(connection);
+        double totalLoss = calculatePlatoCost(connection);
+
+        double netProfit = totalProfit - totalLoss;
+
+        System.out.println("Total Profit: " + totalProfit);
+        System.out.println("Total Loss: " + totalLoss);
+        System.out.println("Net Profit: " + netProfit);
+        return totalProfit;
+    }
+
+    public static double calculateProductProfit(Connection connection) throws SQLException {
+        String query = "SELECT SUM(total_price) AS total_sales FROM VENTAS WHERE category = 'PRODUCTO'";
+        try (PreparedStatement pstmt = connection.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getDouble("total_sales");
+            }
+        }
+        return 0.0;
+    }
+
+    public static double calculatePlatoCost(Connection connection) throws SQLException {
+        String query = "SELECT SUM(price * quantity) AS total_cost FROM PLATO";
+        try (PreparedStatement pstmt = connection.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getDouble("total_cost");
+            }
+        }
+        return 0.0;
+    }
+
 
     public static void ComandaCocina() {
         ArrayList<Plato> comanda = new ArrayList<>();
+        Double total = 0.0;
         try (Statement stmt = connection.createStatement()) {
             Scanner l = new Scanner(System.in);
             while (true) {
@@ -423,37 +510,119 @@ public class App {
                             "Fecha de creación: " + plato.getCreatedAt() + "\n"
                     );
                 }
-
-
-                logger.info("Elija el numero del plato ");
-                int numero = l.nextInt();
-                logger.info("Confirmar comanda (S/N): ");
+                int numero;
+                int cantPlatos;
+                while (true) {
+                    logger.info("Elija el numero del plato ");
+                    numero = l.nextInt();
+                    if (numero > 3 || numero < 1) {
+                        continue;
+                    }
+                    logger.info("Cuantos platos de este queres?: ");
+                    cantPlatos = l.nextInt();
+                    if (cantPlatos < 1) {
+                        continue;
+                    }
+                    break;
+                }
+                logger.info("Confirmar plato (S/N): ");
                 String confirmacion = l.next();
 
                 if (confirmacion.equalsIgnoreCase("S")) {
-                    logger.info("Comanda confirmada");
+                    logger.info("Plato confirmado");
+                    Plato platoApasar = platosDisponibles.get(numero - 1);
+                    platoApasar.setQuantity(cantPlatos);
+                    platoApasar.setPrice(cantPlatos * platosDisponibles.get(numero - 1).getPrice());
+                    comanda.add(platoApasar);
+                    System.out.println("Comanda actual: ");
+                    for (Plato e : comanda) {
+                        System.out.println("Nombre: " + e.getName());
+                        System.out.println("Precio: " + e.getPrice());
+                        System.out.println("Cantidad: " + e.getQuantity());
+                    }
+                    total += platosDisponibles.get(numero - 1).getPrice() * cantPlatos;
                 } else {
-                    logger.info("Comanda cancelada");
+                    logger.info("Plato cancelado");
                 }
-                logger.info("pedir mas comida ? (S/N): ");
+                logger.info("Pedir mas comida ? (S/N): ");
                 String c = l.next();
 
                 if (c.equalsIgnoreCase("N")) {
+                    logger.info("Comanda confimada");
+                    for (Plato e : comanda) {
+                        System.out.println("Nombre: " + e.getName());
+                        System.out.println("Precio: " + e.getPrice());
+                    }
+                    logger.info("Total: " + total);
                     break;
                 }
             }
-        /// llamar a ingeso de ventas //// se le pasa el atributo de nombre comanda con todos los platos que confirmo el cliente//
+            PagarCuenta(comanda);
+
         } catch (SQLException e) {
             System.out.println("Error al obtener los platos: " + e.getMessage());
         }
 
     }
 
-    public static void PagarCuenta() {
+    public static void PagarCuenta(ArrayList<Plato> comanda) {
+        Ventas ventaPlato = new Ventas();
+        Scanner l = new Scanner(System.in);
+        System.out.println("¿Desea pagar la cuenta? (S/N)");
+        String confirmacion = l.next();
+        while (true) {
+            if (confirmacion.equalsIgnoreCase("S")) {
+                ventaPlato.setConnection(connection);
+                ventaPlato.IngresarVentasPlatos(comanda);
+                break;
+            } else if (confirmacion.equalsIgnoreCase("n")) {
+                System.out.println("La comanda fue eliminada");
+                break;
+            }
+        }
 
     }
+
 
     public static void PlatosMasPedidos() {
+        String query = "SELECT * FROM VENTAS WHERE CATEGORY = 'PLATO'";
+        int plato1 = 0;
+        int plato2 = 0;
+        int plato3 = 0;
 
+        try (Connection connection = getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String name = rs.getString("name_sell");
+                int quantity = rs.getInt("quantity");
+                if (name.equals("Paella")) {
+                    plato1 += quantity;
+                } else if (name.equals("Tacos")) {
+                    plato2 += quantity;
+                } else if (name.equals("Sushi")) {
+                    plato3 += quantity;
+                }
+            }
+            String mostOrderedPlato = getMostOrderedPlato(plato1, plato2, plato3);
+            logger.info("El plato mas vendido es: " + mostOrderedPlato);
+        } catch (SQLException e) {
+            System.out.println("Error al cargar PLATOS: " + e.getMessage());
+        }
     }
+
+    private static String getMostOrderedPlato(int paellaCount, int tacosCount, int sushiCount) {
+        if (paellaCount > tacosCount && paellaCount > sushiCount) {
+            return "Paella";
+        } else if (tacosCount > paellaCount && tacosCount > sushiCount) {
+            return "Tacos";
+        } else if (sushiCount > paellaCount && sushiCount > tacosCount) {
+            return "Sushi";
+        } else {
+            return "Empate entre platos más pedidos";
+        }
+    }
+
+
 }

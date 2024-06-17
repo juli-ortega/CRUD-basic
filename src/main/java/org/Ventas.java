@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -29,7 +30,7 @@ public class Ventas {
                 try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
                     pstmt.setString(1, e.getName());
                     pstmt.setInt(2, e.getCantidad());
-                    pstmt.setDouble(3, e.getPrice());
+                    pstmt.setDouble(3, e.getPrice() * e.getCantidad());
                     pstmt.setString(4, "PRODUCTO");
                     pstmt.setDate(5, sqlDate);
                     pstmt.executeUpdate();
@@ -42,14 +43,14 @@ public class Ventas {
         }
     }
 
-    public void IngresarVentasPlatos(List<ProductoDto> platosCarritos) {
+    public void IngresarVentasPlatos(ArrayList<Plato> platosCarritos) {
         Date sqlDate = new Date(System.currentTimeMillis());
         try {
-            for (ProductoDto e : platosCarritos) {
+            for (Plato e : platosCarritos) {
                 String sql = "INSERT INTO VENTAS (name_sell, quantity, total_price, category, createdAt) VALUES (?,?,?,?,?);";
                 try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
                     pstmt.setString(1, e.getName());
-                    pstmt.setInt(2, e.getCantidad());
+                    pstmt.setInt(2, e.getQuantity());
                     pstmt.setDouble(3, e.getPrice());
                     pstmt.setString(4, "PLATO");
                     pstmt.setDate(5, sqlDate);
